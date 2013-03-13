@@ -20,4 +20,4 @@ class TestBuilder:
         b = Builder('test_build')
         b.build_project(branch='master', release='experimental', version='0.100.1', commit=None)
         
-        assert(False)
+        
