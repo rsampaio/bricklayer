@@ -2,11 +2,18 @@ import redis
 
 def transaction(method):
     def new(*args, **kwargs):
-        args[0].redis_cli = redis.Redis()
-        ret = method(*args, **kwargs)
-        if ret == None:
-            ret = ""
-        return ret
+        conn = redis.Redis()
+        args[0].redis_cli = conn
+        try:
+            ret = method(*args, **kwargs)
+            if ret == None:
+                ret = ""
+            return ret
+        finally:
+            if (hasattr(conn, "connection")):
+                conn.connection.disconnect()
+            if (hasattr(conn.connection_pool, "disconnect")):
+                conn.connection_pool.disconnect()
     return new
 
 class ModelBase:
