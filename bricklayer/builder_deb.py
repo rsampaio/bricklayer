@@ -113,7 +113,7 @@ class BuilderDeb():
             os.environ.update({'BRICKLAYER_TAG': last_tag})
 
         # Not now
-        #self.build_install_deps()
+        self.build_install_deps()
 
         if self.project.install_prefix is None:
             self.project.install_prefix = 'opt'
