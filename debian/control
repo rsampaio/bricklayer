@@ -9,6 +9,6 @@ XS-Python-Version: >= 2.6
 
 Package: bricklayer
 Architecture: any
-Depends: ${shlibs:Depends}, ${misc:Depends}, redis-server (>= 2), python-twisted, python-simplejson, python-redis, python-cyclone, python-yaml, schroot, cdebootstrap, git, debhelper, ruby1.9.1-dev
+Depends: ${shlibs:Depends}, ${misc:Depends}, redis-server (>= 2), python-twisted, python-simplejson, python-redis, python-cyclone, python-yaml, schroot, cdebootstrap, git, debhelper, ruby1.9.1-dev, python-yaml
 Description: Builds packages based on git tags or commits
  Bricklayer is a twisted application which watches your repository and builds debian packages for any change in tags or commits

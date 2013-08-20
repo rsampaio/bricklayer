@@ -13,6 +13,9 @@ class Git(object):
         if not _workdir:
             _workdir = BrickConfig().get('workspace', 'dir')
 
+        if not os.path.isdir(_workdir):
+            os.makedirs(_workdir)
+
         self.workdir = os.path.join(_workdir, project.name)
         self.project = project
 
