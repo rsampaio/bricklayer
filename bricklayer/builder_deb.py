@@ -45,9 +45,8 @@ class BuilderDeb():
                 os.rename(changelog, "%s.save" % changelog)
 
             def read_file_data(f):
-                template_fd = open(os.path.join(templates_dir, f))
-                templates[f] = pystache.template.Template(template_fd.read()).render(context=template_data)
-                template_fd.close()
+                with open(os.path.join(templates_dir, f)) as tmpfh:
+                    templates[f] = pystache.template.Template(tmpfh.read()).render(context=template_data)
 
             if not os.path.isdir(self.debian_dir):
 
@@ -56,7 +55,8 @@ class BuilderDeb():
                 os.makedirs( os.path.join(self.debian_dir, self.project.name, self.project.install_prefix))
 
                 for filename, data in templates.iteritems():
-                    open(os.path.join(self.debian_dir, filename), 'w').write(data)
+                    with open(os.path.join(self.debian_dir, filename), 'w') as tmpfh:
+                        tmpfh.write(data)
 
             changelog_entry = """%(name)s (%(version)s) %(branch)s; urgency=low
 
@@ -176,7 +176,8 @@ class BuilderDeb():
             rvm_rc = rvm_rc_example
 
         if has_rvm:
-            rvmexec = open(rvm_rc).read()
+            with open(rvm_rc) as tmpfh:
+                rvmexec = tmpfh.read()
             log.info("RVMRC: %s" % rvmexec)
 
             # I need the output not to log on file
@@ -225,12 +226,14 @@ class BuilderDeb():
         try:
             self.upload_files(distribution, files)
             upload_file = changes_file.replace('.changes', '.upload')
-            open(upload_file, 'w').write("done")
+            with open(upload_file, 'w') as tmpfh:
+                tmpfh.write("done")
         except Exception, e:
             log.error("Package could not be uploaded: %s", e)
 
     def parse_changes(self, changes_file):
-        content = open(changes_file).readlines()
+        with open(changes_file) as tmpfh:
+            content = tmpfh.readlines()
         go = 0
         distribution = ""
         tmpfiles = [os.path.basename(changes_file)]
@@ -291,7 +294,8 @@ BinDirectory "dists/experimental" {
             os.makedirs(repo_src_path)
 
             if not os.path.isfile(archive_conf_file):
-                open(archive_conf_file, 'w').write(
+                with open(archive_conf_file, 'w') as tmpfh:
+                    tmpfh.write(
                         archive_conf_data % (
                             BrickConfig().get("local_repo", "dir"), 
                             self.project.group_name
@@ -319,7 +323,8 @@ BinDirectory "dists/experimental" {
             ftp.cwd(distribution)
             for f in files:
                 log.info("\t%s: " % os.path.join(workspace, f))
-                ftp.storbinary("STOR %s" % f, open(os.path.join(workspace, f), 'rb'))
+                with open(os.path.join(workspace, f), 'rb') as tmpfh:
+                    ftp.storbinary("STOR %s" % f, tmpfh)
                 log.info("done.")
         except Exception, e:
             log.info(repr(e))
