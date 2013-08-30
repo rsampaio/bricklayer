@@ -110,7 +110,6 @@ class Builder(object):
                 elif self.build_system == 'deb':
                     self.package_builder = BuilderDeb(self)
 
-                os.chdir(self.workdir)
                 self.git.workdir = self.workdir
 
                 if release == 'experimental' and self.build_options.changelog:

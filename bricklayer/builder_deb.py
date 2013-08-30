@@ -316,7 +316,6 @@ BinDirectory "dists/experimental" {
         repository_url, user, passwd = self.project.repository()
         if not repository_url:
             return 0
-        os.chdir(BrickConfig().get('workspace', 'dir'))
         workspace = BrickConfig().get('workspace', 'dir')
         ftp = ftplib.FTP(repository_url, user, passwd)
         try:
