@@ -13,9 +13,6 @@ class Git(object):
         if not _workdir:
             _workdir = BrickConfig().get('workspace', 'dir')
 
-        if not os.path.isdir(_workdir):
-            os.makedirs(_workdir)
-
         self.workdir = os.path.join(_workdir, project.name)
         self.project = project
 
@@ -24,14 +21,14 @@ class Git(object):
             stdout = devnull
         if (cwd is None):
             cwd = BrickConfig().get('workspace', 'dir')
-        return subprocess.Popen(cmd, cwd=cwd, stdout=stdout, stderr=stdout)
+        return subprocess.Popen(" ".join(cmd), shell=True, stdout=stdout, stderr=stdout, close_fds=True, cwd=cwd)
 
     def clone(self, branch=None):
         try:
             if (os.path.exists(self.workdir)):
                 shtuil.rmtree(self.workdir, ignore_errors=True)
             log.info("Git clone %s %s" % (self.project.git_url, self.workdir))
-            git_cmd = self._exec_git(['timeout', '300', 'git', 'clone', self.project.git_url, self.workdir])
+            git_cmd = self._exec_git(['git', 'clone', self.project.git_url, self.workdir], stdout=subprocess.PIPE)
             status = git_cmd.wait() == 0
             if branch:
                 self.checkout_branch(branch)
@@ -49,7 +46,7 @@ class Git(object):
     def pull(self):
         status = True
         try:
-            git_cmd = self._exec_git(['timeout', '300', 'git', 'pull', "--ff-only"], cwd=self.workdir)
+            git_cmd = self._exec_git(['git', 'pull', "--ff-only"], cwd=self.workdir)
             status = git_cmd.wait() == 0
         except:
             log.info("error running git pull")
@@ -146,5 +143,5 @@ class Git(object):
         return git_cmd.stdout.readlines()
 
     def push_tags(self):
-        git_cmd = self._exec_git(['git', 'push', '--tags'])
+        git_cmd = self._exec_git(['git', 'push', '--tags'], cwd=self.workdir)
         git_cmd.wait()

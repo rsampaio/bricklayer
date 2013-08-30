@@ -20,7 +20,6 @@ class BricklayerService(service.Service):
 
     def __init__(self):
         log.msg("scheduler: init")
-        os.chdir(BrickConfig().get('workspace', 'dir'))
         self.sched_task = task.LoopingCall(self.sched_builder)
     
     def send_job(self, project_name, branch, release, version):
@@ -52,7 +51,7 @@ class BricklayerService(service.Service):
                 else:
                     git.clone(branch)
 
-                if (not os.path.isdir(git.workdir)):
+                if not os.path.isdir(git.workdir):
                     continue
 
                 for remote_branch in git.branches(remote=True):

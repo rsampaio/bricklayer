@@ -25,6 +25,7 @@ from builder_rpm import BuilderRpm
 from builder_deb import BuilderDeb
 from build_options import BuildOptions
 from build_container import BuildContainer
+from current_build import CurrentBuild
 
 #from dreque import Dreque
 
@@ -85,6 +86,7 @@ class Builder(object):
         else:
             chroot_cmd = "chroot %s bash -c \"cd %s; %s\"" % (self.build_container.dir, self.real_workspace, " ".join(cmd))
             kwargs.update({'shell': True})
+            kwargs["cwd"] = self.workdir
             return subprocess.Popen(chroot_cmd, *args, **kwargs)
         
 
@@ -101,8 +103,6 @@ class Builder(object):
                 self.real_workspace = "%s-%s" % (self.real_workspace, release)
                 if (os.path.exists(self.workdir)):
                     shutil.rmtree(self.workdir, ignore_errors=True)
-                
-                log.info("%s %s", self.workdir, self.git.workdir)
                 shutil.copytree(self.git.workdir, self.workdir)
 
                 if self.build_system == 'rpm':
@@ -110,7 +110,9 @@ class Builder(object):
                 elif self.build_system == 'deb':
                     self.package_builder = BuilderDeb(self)
 
+                # os.chdir(self.workdir)
                 self.git.workdir = self.workdir
+                self.git.checkout_branch(branch)
 
                 if release == 'experimental' and self.build_options.changelog:
                     self.git.checkout_branch(branch)
@@ -130,6 +132,7 @@ class Builder(object):
                 log.exception("build failed: %s" % repr(e))
             finally:
                 self.project.stop_building()
-                shutil.rmtree(self.workdir, ignore_errors=True)
+                # shutil.rmtree(self.workdir, ignore_errors=True)
                 if self.build_container != None:
                     self.build_container.teardown()
+

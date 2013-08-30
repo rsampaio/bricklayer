@@ -80,14 +80,14 @@ class BuilderDeb():
             return (None, None)
 
     def build_install_deps(self):
-        p = self.builder._exec(["dpkg-checkbuilddeps"], stderr=subprocess.PIPE)
+        p = self.builder._exec(["dpkg-checkbuilddeps"], stderr=subprocess.PIPE, close_fds=True)
         p.wait()
         out = p.stderr.read()
         if out != "":
             deps = re.findall("([a-z0-9\-]+\s|[a-z0-9\-]+$)", out.split("dependencies:")[1])
             deps = map(lambda x: x.strip(), deps)
             apt_cmd = "apt-get -y --force-yes install %s" % " ".join(deps)
-            b = self.builder._exec(apt_cmd.split(), stdout=self.stdout, stderr=self.stderr)
+            b = self.builder._exec(apt_cmd.split(), stdout=self.stdout, stderr=self.stderr, close_fds=True)
             b.wait()
             
 
@@ -98,7 +98,7 @@ class BuilderDeb():
 
         self.build_info = BuildInfo(self.project.name)
         logfile = os.path.join(
-                self.builder.workspace, 'log', '%s.%s.log' % (
+                BrickConfig().get("workspace", "dir"), 'log', '%s.%s.log' % (
                     self.project.name, self.build_info.build_id
                     )
                 )
@@ -113,14 +113,15 @@ class BuilderDeb():
             os.environ.update({'BRICKLAYER_TAG': last_tag})
 
         # Not now
-        self.build_install_deps()
+        #self.build_install_deps()
 
         if self.project.install_prefix is None:
             self.project.install_prefix = 'opt'
 
         if not self.project.install_cmd :
             self.project.install_cmd = 'cp -r \`ls | grep -v debian\` debian/tmp/%s' % (
-                self.project.install_prefix)
+                self.project.install_prefix
+            )
 
         changelog_entry, changelog_data = self.configure_changelog(branch)
 
@@ -164,6 +165,8 @@ class BuilderDeb():
             self.project.version(branch, force_version)
             self.project.version(force_release, force_version)
 
+        
+
         rvm_env = {}
         rvm_rc = os.path.join(self.builder.workdir, '.rvmrc')
         rvm_rc_example = rvm_rc +  ".example"
@@ -199,18 +202,18 @@ class BuilderDeb():
                     del(os_env[k])
             rvm_env.update(os_env)
 
+	log.info(rvm_env)
+
         os.chmod(os.path.join(self.debian_dir, 'rules'), stat.S_IRWXU|stat.S_IRWXG|stat.S_IROTH|stat.S_IXOTH)
         dpkg_cmd = self.builder._exec(
                 ['dpkg-buildpackage',  
                  '-rfakeroot', '-tc', '-k%s' % BrickConfig().get('gpg', 'keyid')],
-                cwd=self.builder.workdir, env=rvm_env, stdout=self.stdout, stderr=self.stderr
-        )
-
+                cwd=self.builder.workdir, env=rvm_env, stdout=self.stdout, stderr=self.stderr, close_fds=True)
         dpkg_cmd.wait()
 
         clean_cmd = self.builder._exec(['dh', 'clean'], 
                                        cwd=self.builder.workdir, 
-                                       stdout=self.stdout, stderr=self.stderr)
+                                       stdout=self.stdout, stderr=self.stderr, close_fds=True)
         clean_cmd.wait()
 
 
@@ -218,14 +221,13 @@ class BuilderDeb():
         glob_str = '%s/%s_%s_*.changes' % (
                 BrickConfig().get('workspace', 'dir'), 
                 self.project.name, self.project.version(branch))
-        changes_file = glob.glob(glob_str)[0]
-        
-        distribution, files = self.parse_changes(changes_file)
-        self.local_repo(distribution, files)
+        changes_file = glob.glob(glob_str)
+	log.info(changes_file)
+        distribution, files = self.parse_changes(changes_file[0])
 
         try:
             self.upload_files(distribution, files)
-            upload_file = changes_file.replace('.changes', '.upload')
+            upload_file = changes_file[0].replace('.changes', '.upload')
             with open(upload_file, 'w') as tmpfh:
                 tmpfh.write("done")
         except Exception, e:
@@ -253,6 +255,8 @@ class BuilderDeb():
         for f in tmpfiles:
             filename = f.split()
             files.append(filename[len(filename) - 1])
+	log.info(">>>>>")
+	log.info(files)
         return distribution, files
 
     def local_repo(self, distribution, files):
@@ -316,6 +320,7 @@ BinDirectory "dists/experimental" {
         repository_url, user, passwd = self.project.repository()
         if not repository_url:
             return 0
+        # os.chdir(BrickConfig().get('workspace', 'dir'))
         workspace = BrickConfig().get('workspace', 'dir')
         ftp = ftplib.FTP(repository_url, user, passwd)
         try:
