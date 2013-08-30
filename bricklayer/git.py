@@ -19,9 +19,11 @@ class Git(object):
         self.workdir = os.path.join(_workdir, project.name)
         self.project = project
 
-    def _exec_git(self, cmd=[], cwd='.', stdout=None):
+    def _exec_git(self, cmd=[], cwd=None, stdout=None):
         if stdout is None:
             stdout = devnull
+        if (cwd is None):
+            cwd = BrickConfig().get('workspace', 'dir')
         return subprocess.Popen(cmd, cwd=cwd, stdout=stdout, stderr=stdout)
 
     def clone(self, branch=None):
