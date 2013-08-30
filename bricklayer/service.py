@@ -20,6 +20,7 @@ class BricklayerService(service.Service):
 
     def __init__(self):
         log.msg("scheduler: init")
+        os.chdir(BrickConfig().get('workspace', 'dir'))
         self.sched_task = task.LoopingCall(self.sched_builder)
     
     def send_job(self, project_name, branch, release, version):
