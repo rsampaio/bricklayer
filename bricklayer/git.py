@@ -46,8 +46,9 @@ class Git(object):
     def pull(self):
         status = True
         try:
-            git_cmd = self._exec_git(['git', 'pull', "--ff-only"], cwd=self.workdir)
-            status = git_cmd.wait() == 0
+            for cmd in [['timeout', '300', 'git', 'pull', '--ff-only'], ['timeout', '300', 'git', 'fetch', '--tags']]:
+                git_cmd = self._exec_git(cmd, cwd=self.workdir)
+                status  = status and (git_cmd.wait() == 0)
         except:
             log.info("error running git pull")
             status = False
