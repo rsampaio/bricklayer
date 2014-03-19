@@ -88,7 +88,6 @@ class Builder(object):
             kwargs.update({'shell': True})
             kwargs["cwd"] = self.workdir
             return subprocess.Popen(chroot_cmd, *args, **kwargs)
-        
 
     def build_project(self, branch=None, release=None, version=None, commit=None):
 
@@ -103,7 +102,7 @@ class Builder(object):
                 self.real_workspace = "%s-%s" % (self.real_workspace, release)
                 if (os.path.exists(self.workdir)):
                     shutil.rmtree(self.workdir, ignore_errors=True)
-                shutil.copytree(self.git.workdir, self.workdir)
+                shutil.copytree(self.git.workdir, self.workdir, True)
 
                 if self.build_system == 'rpm':
                     self.package_builder = BuilderRpm(self)
