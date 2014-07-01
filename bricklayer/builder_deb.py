@@ -171,6 +171,7 @@ class BuilderDeb():
         rvm_rc = os.path.join(self.builder.workdir, '.rvmrc')
         rvm_rc_example = rvm_rc +  ".example"
         has_rvm = False
+        rvmexec = None
 
         if os.path.isfile(rvm_rc):
             has_rvm = True
@@ -180,39 +181,32 @@ class BuilderDeb():
 
         if has_rvm:
             with open(rvm_rc) as tmpfh:
-                rvmexec = tmpfh.read()
-            log.info("RVMRC: %s" % rvmexec)
-
-            # I need the output not to log on file
-            rvm_cmd = subprocess.Popen('/usr/local/rvm/bin/rvm info %s' % rvmexec.split()[1],
-                    shell=True, stdout=subprocess.PIPE)
-            rvm_cmd.wait()
-            for line in rvm_cmd.stdout.readlines():
-                if 'PATH' in line or 'HOME' in line:
-                    name, value = line.split()
-                    rvm_env[name.strip(':')] = value.strip('"')
-            rvm_env['HOME'] = os.environ['HOME']
-
-        if len(rvm_env.keys()) < 1:
-            rvm_env = os.environ
-        else:
-            os_env = dict(os.environ)
-            for k in ("PATH", "GEM_HOME", "BUNDLER_PATH"):
-                if (k in os_env):
-                    del(os_env[k])
-            rvm_env.update(os_env)
-
-	log.info(rvm_env)
+                rvmexec = tmpfh.read().split()
+            log.info("%s: RVMRC: %s" % (self.project.name, rvmexec))
 
         os.chmod(os.path.join(self.debian_dir, 'rules'), stat.S_IRWXU|stat.S_IRWXG|stat.S_IROTH|stat.S_IXOTH)
-        dpkg_cmd = self.builder._exec(
-                ['dpkg-buildpackage',  
-                 '-rfakeroot', '-tc', '-k%s' % BrickConfig().get('gpg', 'keyid')],
-                cwd=self.builder.workdir, env=rvm_env, stdout=self.stdout, stderr=self.stderr, close_fds=True)
+        if (rvmexec is not None):
+            if (rvmexec[0].strip() == "rvm"):
+                rvmexec[0] = "/usr/local/rvm/bin/rvm"
+            dpkg_cmd = self.builder._exec(
+                rvmexec + [
+                  "do",
+                  "dpkg-buildpackage",
+                  "-rfakeroot",
+                  "-tc",
+                  "-k%s" % BrickConfig().get("gpg", "keyid")
+                ], cwd=self.builder.workdir, env=rvm_env, stdout=self.stdout, stderr=self.stderr, close_fds=True)
+        else:
+            dpkg_cmd = self.builder._exec(
+                [ "dpkg-buildpackage",
+                  "-rfakeroot",
+                  "-tc",
+                  "-k%s" % BrickConfig().get("gpg", "keyid")
+                ], cwd=self.builder.workdir, env=rvm_env, stdout=self.stdout, stderr=self.stderr, close_fds=True)
         dpkg_cmd.wait()
 
-        clean_cmd = self.builder._exec(['dh', 'clean'], 
-                                       cwd=self.builder.workdir, 
+        clean_cmd = self.builder._exec(['dh', 'clean'],
+                                       cwd=self.builder.workdir,
                                        stdout=self.stdout, stderr=self.stderr, close_fds=True)
         clean_cmd.wait()
 
