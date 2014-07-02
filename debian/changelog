@@ -1,3 +1,9 @@
+bricklayer (5.3.1-2) stable; urgency=low
+
+  * bugfix: no need to use rvm do as we did load before
+
+ -- Diego Souza <dsouza@c0d3.xxx>  Wed, 02 Jul 2014 18:15:10 -0300
+
 bricklayer (5.3.1-1) stable; urgency=low
 
   * new way to launch build with rvm: bricklayer-rvm-exec
