@@ -173,15 +173,15 @@ class BuilderDeb():
         os.chmod(os.path.join(self.debian_dir, 'rules'), stat.S_IRWXU|stat.S_IRWXG|stat.S_IROTH|stat.S_IXOTH)
         if has_rvm:
             dpkg_cmd = self.builder._exec(
-                [ "/usr/bin/bricklayer-rvm-exec"
-                  "dpkg-buildpackage",
+                [ "/usr/bin/bricklayer-rvm-exec",
+                  "/usr/bin/dpkg-buildpackage",
                   "-rfakeroot",
                   "-tc",
                   "-k%s" % BrickConfig().get("gpg", "keyid")
                 ], cwd=self.builder.workdir, stdout=self.stdout, stderr=self.stderr, close_fds=True)
         else:
             dpkg_cmd = self.builder._exec(
-                [ "dpkg-buildpackage",
+                [ "/usr/bin/dpkg-buildpackage",
                   "-rfakeroot",
                   "-tc",
                   "-k%s" % BrickConfig().get("gpg", "keyid")
