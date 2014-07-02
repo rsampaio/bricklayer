@@ -34,6 +34,8 @@ data_files_list.extend([
                 'etc/bricklayer/bricklayer.ini',
                 'etc/bricklayer/gpg.key']),
         ])
+data_files_list.append(("/usr/bin", "bin/bricklayer-rvm-exec"))
+
 setup(
     name='bricklayer',
     version='1.0',
