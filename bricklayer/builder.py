@@ -37,6 +37,7 @@ log_file = config.get('log', 'file')
 
 logging.basicConfig(filename=log_file, level=logging.DEBUG)
 log = logging.getLogger('builder')
+log.setLevel(logging.DEBUG)
 
 @defer.inlineCallbacks
 def build_project(kargs):
@@ -81,13 +82,8 @@ class Builder(object):
         self.stderr = self.stdout
 
     def _exec(self, cmd, *args, **kwargs):
-        if True or self.build_options.not_found:
-            return subprocess.Popen(cmd, *args, **kwargs)
-        else:
-            chroot_cmd = "chroot %s bash -c \"cd %s; %s\"" % (self.build_container.dir, self.real_workspace, " ".join(cmd))
-            kwargs.update({'shell': True})
-            return subprocess.Popen(chroot_cmd, *args, **kwargs)
-        
+        log.info("exec: %s %s [%s]" % (cmd, args, kwargs))
+        return subprocess.Popen(cmd, *args, **kwargs)
 
     def build_project(self, branch=None, release=None, version=None, commit=None):
         log.info("ENTER:build_project")
