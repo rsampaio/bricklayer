@@ -165,9 +165,6 @@ class BuilderDeb():
             self.project.version(branch, force_version)
             self.project.version(force_release, force_version)
 
-        
-
-        rvm_env = {}
         rvm_rc = os.path.join(self.builder.workdir, '.rvmrc')
         rvm_rc_example = rvm_rc +  ".example"
         has_rvm = False
@@ -195,14 +192,14 @@ class BuilderDeb():
                   "-rfakeroot",
                   "-tc",
                   "-k%s" % BrickConfig().get("gpg", "keyid")
-                ], cwd=self.builder.workdir, env=rvm_env, stdout=self.stdout, stderr=self.stderr, close_fds=True)
+                ], cwd=self.builder.workdir, stdout=self.stdout, stderr=self.stderr, close_fds=True)
         else:
             dpkg_cmd = self.builder._exec(
                 [ "dpkg-buildpackage",
                   "-rfakeroot",
                   "-tc",
                   "-k%s" % BrickConfig().get("gpg", "keyid")
-                ], cwd=self.builder.workdir, env=rvm_env, stdout=self.stdout, stderr=self.stderr, close_fds=True)
+                ], cwd=self.builder.workdir, stdout=self.stdout, stderr=self.stderr, close_fds=True)
         dpkg_cmd.wait()
 
         clean_cmd = self.builder._exec(['dh', 'clean'],
