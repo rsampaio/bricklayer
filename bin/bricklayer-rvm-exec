@@ -1,12 +1,10 @@
-#!/bin/sh
+#!/bin/bash
 
-if [ -f ".rvmrc_example" ]
+. /usr/local/rvm/scripts/rvm
+if [ -f ".rvmrc.example" ]
 then 
-  mv .rvmrc_example .rvmrc
-  /usr/local/rvm/bin/rvm rvmrc load
-else
-  /usr/local/rvm/bin/rvm rvmrc load
+  mv .rvmrc.example .rvmrc
 fi
-
-/usr/local/rvm/bin/rvm info
+rvm rvmrc load
+rvm info
 exec "$@"
