@@ -5,31 +5,28 @@ import shutil
 import logging as log
 from config import BrickConfig
 
-devnull = open('/dev/null', 'w')
-
 class Git(object):
     def __init__(self, project, workdir=None):
         _workdir = workdir
         if not _workdir:
             _workdir = BrickConfig().get('workspace', 'dir')
-
         self.workdir = os.path.join(_workdir, project.name)
         self.project = project
 
-    def _exec_git(self, cmd=[], cwd=None, stdout=None):
+    def _exec_git(self, cmd=[], cwd='.', stdout=None):
         if stdout is None:
-            stdout = devnull
-        if (cwd is None):
-            cwd = BrickConfig().get('workspace', 'dir')
-        return subprocess.Popen(" ".join(cmd), shell=True, stdout=stdout, stderr=stdout, close_fds=True, cwd=cwd)
+            stdout = open('/dev/null', 'w')
+        return subprocess.Popen(" ".join(cmd), cwd=cwd, shell=True, stdout=stdout, stderr=stdout)
 
     def clone(self, branch=None):
         try:
             if (os.path.exists(self.workdir)):
                 shtuil.rmtree(self.workdir, ignore_errors=True)
             log.info("Git clone %s %s" % (self.project.git_url, self.workdir))
-            git_cmd = self._exec_git(['git', 'clone', self.project.git_url, self.workdir], stdout=subprocess.PIPE)
+            git_cmd = self._exec_git(['timeout', '300', 'git', 'clone', self.project.git_url, self.workdir], stdout=subprocess.PIPE)
             status = git_cmd.wait() == 0
+            log.info("git clone out: %s" % git_cmd.stdout.readlines())
+            log.info("git retcode: %s" % status)
             if branch:
                 self.checkout_branch(branch)
         except Exception, e:
@@ -48,7 +45,7 @@ class Git(object):
         try:
             for cmd in [['timeout', '300', 'git', 'pull', '--ff-only'], ['timeout', '300', 'git', 'fetch', '--tags']]:
                 git_cmd = self._exec_git(cmd, cwd=self.workdir)
-                status  = status and (git_cmd.wait() == 0)
+                status = status and (git_cmd.wait() == 0)
         except:
             log.info("error running git pull")
             status = False
@@ -93,8 +90,7 @@ class Git(object):
     def last_commit(self, branch='master'):
         cf = os.path.join(self.workdir, '.git', 'refs', 'heads', branch)
         if os.path.exists(cf):
-            with file(cf, "r") as fh:
-                return(fh.read())
+            return open(cf).read()
 
     def last_tag(self, tag_type):
         tags = self.tags(tag_type)
@@ -144,5 +140,5 @@ class Git(object):
         return git_cmd.stdout.readlines()
 
     def push_tags(self):
-        git_cmd = self._exec_git(['git', 'push', '--tags'], cwd=self.workdir)
+        git_cmd = self._exec_git(['git', 'push', '--tags'])
         git_cmd.wait()
