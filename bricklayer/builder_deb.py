@@ -168,26 +168,12 @@ class BuilderDeb():
         rvm_rc = os.path.join(self.builder.workdir, '.rvmrc')
         rvm_rc_example = rvm_rc +  ".example"
         has_rvm = False
-        rvmexec = None
 
-        if os.path.isfile(rvm_rc):
-            has_rvm = True
-        elif os.path.isfile(rvm_rc_example):
-            has_rvm = True
-            rvm_rc = rvm_rc_example
-
-        if has_rvm:
-            with open(rvm_rc) as tmpfh:
-                rvmexec = tmpfh.read().split()
-            log.info("%s: RVMRC: %s" % (self.project.name, rvmexec))
-
+        has_rvm = os.path.isfile(rvm_rc) or os.path.isfile(rvm_rc_example)
         os.chmod(os.path.join(self.debian_dir, 'rules'), stat.S_IRWXU|stat.S_IRWXG|stat.S_IROTH|stat.S_IXOTH)
-        if (rvmexec is not None):
-            if (rvmexec[0].strip() == "rvm"):
-                rvmexec[0] = "/usr/local/rvm/bin/rvm"
+        if has_rvm:
             dpkg_cmd = self.builder._exec(
-                rvmexec + [
-                  "do",
+                [ "/usr/bin/bricklayer-rvm-exec"
                   "dpkg-buildpackage",
                   "-rfakeroot",
                   "-tc",
