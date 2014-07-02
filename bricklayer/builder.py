@@ -10,6 +10,7 @@ import ConfigParser
 import shlex
 import shutil
 import logging
+import traceback
 
 sys.path.append(os.path.join(os.path.dirname(__file__), 'utils'))
 sys.path.append(os.path.dirname(__file__))
@@ -25,7 +26,6 @@ from builder_rpm import BuilderRpm
 from builder_deb import BuilderDeb
 from build_options import BuildOptions
 from build_container import BuildContainer
-from current_build import CurrentBuild
 
 #from dreque import Dreque
 
@@ -86,15 +86,16 @@ class Builder(object):
         else:
             chroot_cmd = "chroot %s bash -c \"cd %s; %s\"" % (self.build_container.dir, self.real_workspace, " ".join(cmd))
             kwargs.update({'shell': True})
-            kwargs["cwd"] = self.workdir
             return subprocess.Popen(chroot_cmd, *args, **kwargs)
+        
 
     def build_project(self, branch=None, release=None, version=None, commit=None):
-
+        log.info("ENTER:build_project")
         if not self.project.is_building():
             self.project.start_building()
             try:
                 if (release is not None and version is not None):
+                    log.info("git fetch/clone")
                     if (not self.git.pull()):
                         self.git.clone(branch)
 
@@ -103,13 +104,14 @@ class Builder(object):
                 if (os.path.exists(self.workdir)):
                     shutil.rmtree(self.workdir, ignore_errors=True)
                 shutil.copytree(self.git.workdir, self.workdir, True)
+                log.info("shutil.copytree: ok")
 
                 if self.build_system == 'rpm':
                     self.package_builder = BuilderRpm(self)
                 elif self.build_system == 'deb':
                     self.package_builder = BuilderDeb(self)
 
-                # os.chdir(self.workdir)
+                os.chdir(self.workdir)
                 self.git.workdir = self.workdir
                 self.git.checkout_branch(branch)
 
@@ -128,10 +130,10 @@ class Builder(object):
                     self.package_builder.upload(release)
                 self.git.checkout_branch('master')
             except Exception, e:
+                traceback.print_exc()
                 log.exception("build failed: %s" % repr(e))
             finally:
                 self.project.stop_building()
-                # shutil.rmtree(self.workdir, ignore_errors=True)
+                shutil.rmtree(self.workdir, ignore_errors=True)
                 if self.build_container != None:
                     self.build_container.teardown()
-

@@ -36,8 +36,6 @@ class BricklayerService(service.Service):
 
     def sched_builder(self):
         for project in sorted(Projects.get_all(), key=lambda p: p.name):
-            if (project.name == ""):
-                continue
             try:
                 log.msg("checking project: %s" % project.name)
                 if project.is_building():
@@ -50,7 +48,7 @@ class BricklayerService(service.Service):
                     git.pull()
                 else:
                     git.clone(branch)
-
+                
                 if not os.path.isdir(git.workdir):
                     continue
 
