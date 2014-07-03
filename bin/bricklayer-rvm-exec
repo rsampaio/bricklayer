@@ -1,10 +1,12 @@
 #!/bin/bash
 
-. /usr/local/rvm/scripts/rvm
+(. /usr/local/rvm/scripts/rvm
 if [ -f ".rvmrc.example" ]
 then 
-  mv .rvmrc.example .rvmrc
+  . .rvmrc.example
+elif
+then
+  . .rvmrc
 fi
-rvm rvmrc load
 rvm info
-exec "$@"
+exec "$@")
