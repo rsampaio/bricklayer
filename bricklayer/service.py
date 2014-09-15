@@ -1,6 +1,5 @@
 import sys
 import os
-import logging
 sys.path.append(os.path.join(os.path.dirname(__file__), 'utils'))
 import pystache
 
@@ -20,7 +19,6 @@ class BricklayerService(service.Service):
 
     def __init__(self):
         log.msg("scheduler: init")
-        self.sched_task = task.LoopingCall(self.sched_builder)
     
     def send_job(self, project_name, branch, release, version):
         log.msg('sched build: %s [%s:%s]' % (project_name, release, version))
@@ -34,7 +32,15 @@ class BricklayerService(service.Service):
             'version': version,
             })
 
+    def sched_builder_forever(self):
+        while True:
+            try:
+                self.sched_builder()
+            except:
+                pass
+
     def sched_builder(self):
+        reactor.getThreadPool().dumpStats()
         for project in sorted(Projects.get_all(), key=lambda p: p.name):
             try:
                 log.msg("checking project: %s" % project.name)
@@ -81,13 +87,11 @@ class BricklayerService(service.Service):
 
     def startService(self):
         service.Service.startService(self)
-        log.msg("scheduler: start %s" % self.sched_task)
-        self.sched_task.start(10.0)
+        threads.deferToThread(self.sched_builder_forever)
 
     @defer.inlineCallbacks
     def stopService(self):
         service.Service.stopService(self)
-        yield self.sched_task.stop()
 
 
 brickService = BricklayerService()

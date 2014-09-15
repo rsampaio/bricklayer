@@ -8,21 +8,19 @@ import stat
 import subprocess
 import ftplib
 import pystache
-import logging
+import traceback
+from twisted.python import log
 from urlparse import urlparse
 
 from projects import Projects
 from config import BrickConfig
 from build_info import BuildInfo
 
-log = logging.getLogger('builder')
-
 class BuilderDeb():
     def __init__(self, builder):
         self.builder = builder
         self.project = self.builder.project
-        log.info("Debian builder initialized: %s" % self.builder.workdir)
-        log.info("Building [%s] with options: %s" % (
+        log.msg("Building [%s] with options: %s" % (
                 self.project.name, 
                 self.builder.build_options.options
                 ))
@@ -102,7 +100,6 @@ class BuilderDeb():
                     self.project.name, self.build_info.build_id
                     )
                 )
-        log.info("build log file: %s" % logfile)
         self.build_info.log(logfile)
         self.stdout = open(logfile, 'a+')
         self.stderr = self.stdout
@@ -181,7 +178,7 @@ class BuilderDeb():
                 ], cwd=self.builder.workdir, stdout=self.stdout, stderr=self.stderr, close_fds=True)
         else:
             dpkg_cmd = self.builder._exec(
-                [ "/usr/bin/dpkg-buildpackage",
+                [ "dpkg-buildpackage",
                   "-rfakeroot",
                   "-tc",
                   "-k%s" % BrickConfig().get("gpg", "keyid")
@@ -199,7 +196,6 @@ class BuilderDeb():
                 BrickConfig().get('workspace', 'dir'), 
                 self.project.name, self.project.version(branch))
         changes_file = glob.glob(glob_str)
-	log.info(changes_file)
         distribution, files = self.parse_changes(changes_file[0])
 
         try:
@@ -208,7 +204,7 @@ class BuilderDeb():
             with open(upload_file, 'w') as tmpfh:
                 tmpfh.write("done")
         except Exception, e:
-            log.error("Package could not be uploaded: %s", e)
+            log.msg("[%s] %s" % (self.project.name, traceback.format_exc()))
 
     def parse_changes(self, changes_file):
         with open(changes_file) as tmpfh:
@@ -232,8 +228,6 @@ class BuilderDeb():
         for f in tmpfiles:
             filename = f.split()
             files.append(filename[len(filename) - 1])
-	log.info(">>>>>")
-	log.info(files)
         return distribution, files
 
     def local_repo(self, distribution, files):
@@ -303,10 +297,8 @@ BinDirectory "dists/experimental" {
         try:
             ftp.cwd(distribution)
             for f in files:
-                log.info("\t%s: " % os.path.join(workspace, f))
                 with open(os.path.join(workspace, f), 'rb') as tmpfh:
                     ftp.storbinary("STOR %s" % f, tmpfh)
-                log.info("done.")
         except Exception, e:
-            log.info(repr(e))
+            log.msg("[%s] %s" % (self.project.name, traceback.format_exc()))
         ftp.quit()

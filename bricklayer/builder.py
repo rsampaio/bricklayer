@@ -9,7 +9,6 @@ import time
 import ConfigParser
 import shlex
 import shutil
-import logging
 import traceback
 
 sys.path.append(os.path.join(os.path.dirname(__file__), 'utils'))
@@ -18,6 +17,7 @@ sys.path.append(os.path.dirname(__file__))
 from bricklayer.utils import pystache
 import git
 
+from twisted.python import log
 from twisted.internet import threads, reactor, defer
 from config import BrickConfig
 from projects import Projects
@@ -34,10 +34,6 @@ redis_server = config.get('redis', 'redis-server')
 log_file = config.get('log', 'file')
 
 #queue = Dreque(redis_server)
-
-logging.basicConfig(filename=log_file, level=logging.DEBUG)
-log = logging.getLogger('builder')
-log.setLevel(logging.DEBUG)
 
 @defer.inlineCallbacks
 def build_project(kargs):
@@ -82,16 +78,15 @@ class Builder(object):
         self.stderr = self.stdout
 
     def _exec(self, cmd, *args, **kwargs):
-        log.info("exec: %s %s [%s]" % (cmd, args, kwargs))
+        log.msg("[%s] exec: %s %s [%s]" % (self.project.name, cmd, args, kwargs))
         return subprocess.Popen(cmd, *args, **kwargs)
 
     def build_project(self, branch=None, release=None, version=None, commit=None):
-        log.info("ENTER:build_project")
         if not self.project.is_building():
             self.project.start_building()
             try:
                 if (release is not None and version is not None):
-                    log.info("git fetch/clone")
+                    log.msg("[%s] git fetch/clone" % (self.project.name,))
                     if (not self.git.pull()):
                         self.git.clone(branch)
 
@@ -100,7 +95,7 @@ class Builder(object):
                 if (os.path.exists(self.workdir)):
                     shutil.rmtree(self.workdir, ignore_errors=True)
                 shutil.copytree(self.git.workdir, self.workdir, True)
-                log.info("shutil.copytree: ok")
+                log.msg("[%s] shutil.copytree: ok" % (self.project.name,))
 
                 if self.build_system == 'rpm':
                     self.package_builder = BuilderRpm(self)
@@ -126,8 +121,7 @@ class Builder(object):
                     self.package_builder.upload(release)
                 self.git.checkout_branch('master')
             except Exception, e:
-                traceback.print_exc()
-                log.exception("build failed: %s" % repr(e))
+                log.msg("[%s] %s" % (self.project.name, traceback.format_exc()))
             finally:
                 self.project.stop_building()
                 shutil.rmtree(self.workdir, ignore_errors=True)

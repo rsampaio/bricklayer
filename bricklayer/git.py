@@ -2,7 +2,8 @@ import os
 import subprocess
 import re
 import shutil
-import logging as log
+import traceback
+from twisted.python import log
 from config import BrickConfig
 
 class Git(object):
@@ -22,15 +23,13 @@ class Git(object):
         try:
             if (os.path.exists(self.workdir)):
                 shtuil.rmtree(self.workdir, ignore_errors=True)
-            log.info("Git clone %s %s" % (self.project.git_url, self.workdir))
             git_cmd = self._exec_git(['timeout', '300', 'git', 'clone', self.project.git_url, self.workdir], stdout=subprocess.PIPE)
             status = git_cmd.wait() == 0
-            log.info("git clone out: %s" % git_cmd.stdout.readlines())
-            log.info("git retcode: %s" % status)
+            log.msg("[%s] git clone %s = %s" % (self.workdir, self.project.git_url, status))
             if branch:
                 self.checkout_branch(branch)
         except Exception, e:
-            log.info("error running git clone: %s" % str(e))
+            log.msg("[%s] %s" % (self.workdir, traceback.format_exc()))
             status = False
         if (not status):
             shutil.rmtree(self.workdir, ignore_errors=True)
@@ -47,7 +46,7 @@ class Git(object):
                 git_cmd = self._exec_git(cmd, cwd=self.workdir)
                 status = status and (git_cmd.wait() == 0)
         except:
-            log.info("error running git pull")
+            log.msg("[%s] %s" % (self.workdir, traceback.format_exc()))
             status = False
         if (not status):
             shutil.rmtree(self.workdir, ignore_errors=True)
@@ -57,7 +56,7 @@ class Git(object):
         git_cmd = self._exec_git(['git', 'checkout', '-f', tag], stdout=subprocess.PIPE, cwd=self.workdir)
         s = git_cmd.wait()
         if s != 0:
-            log.info("Checkout fail: %s" % git_cmd.stderr.read())
+            log.msg("[%s] checkout fail" % (self.workdir,))
 
     def checkout_branch(self, branch):
         if branch in self.branches():
@@ -84,7 +83,7 @@ class Git(object):
         try:
             shutil.rmtree(self.workdir)
         except Exception, e:
-            log.info("could not remove folders but I'm ignoring it")
+            pass
             
 
     def last_commit(self, branch='master'):
@@ -122,7 +121,7 @@ class Git(object):
             return result
 
         except Exception, e:
-            log.exception(repr(e))
+            log.msg("[%s] %s" % (self.workdir, traceback.format_exc()))
             return []
 
     def create_tag(self, tag=''):
