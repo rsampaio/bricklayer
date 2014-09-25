@@ -1,10 +1,10 @@
 #!/bin/bash
 
 (. /usr/local/rvm/scripts/rvm
-if [ -f ".rvmrc.example" ]
+if [ -f .rvmrc.example ]
 then 
   . .rvmrc.example
-elif
+elif [ -f .rvmrc ]
 then
   . .rvmrc
 fi
