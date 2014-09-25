@@ -40,7 +40,6 @@ class BricklayerService(service.Service):
                 pass
 
     def sched_builder(self):
-        reactor.getThreadPool().dumpStats()
         for project in sorted(Projects.get_all(), key=lambda p: p.name):
             try:
                 log.msg("checking project: %s" % project.name)
